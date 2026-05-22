@@ -1,9 +1,12 @@
 package com.evaluate.ai.langchain.controller;
 
 import com.evaluate.ai.langchain.agents.QuestionBuilderAgent;
+import com.evaluate.ai.langchain.agents.SimilarTopicsExtractorAgent;
 import com.evaluate.ai.langchain.agents.TestDataProviderAgent;
 import com.evaluate.ai.langchain.listener.CustomAgentListener;
 import com.evaluate.ai.langchain.model.DifficultyLevel;
+import com.evaluate.ai.langchain.model.QuestionsOutput;
+import com.evaluate.ai.langchain.model.SimilarTopicList;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.model.chat.ChatModel;
@@ -35,7 +38,7 @@ public class AiLangchainController {
     }
 
     @GetMapping("/chat")
-    public ResponseEntity<String> chatWithAi(@RequestParam String query) {
+    public ResponseEntity<?> chatWithAi(@RequestParam String query) {
         WebSearchEngine webSearchEngine = TavilyWebSearchEngine.builder()
                 .apiKey(System.getenv("TAVILY_API_KEY"))
                 .build();
@@ -69,19 +72,40 @@ public class AiLangchainController {
                 .listener(customAgentListener)
                 .build();
 
-        UntypedAgent novelCreator = AgenticServices.sequenceBuilder()
+        UntypedAgent questionAnswerAgent = AgenticServices.sequenceBuilder()
                 .subAgents(testDataProviderAgent, questionBuilderAgent)
-                .outputKey("exam")
+                .outputKey("questions")
+                .listener(customAgentListener)
+                .build();
+
+        SimilarTopicsExtractorAgent similarTopicsExtractorAgent = AgenticServices.agentBuilder(SimilarTopicsExtractorAgent.class)
+                .chatModel(ollamaChatModel)
+                .outputKey("similarTopics")
+                .listener(customAgentListener)
+                .build();
+
+        UntypedAgent parallelAgent = AgenticServices.sequenceBuilder()
+                .subAgents(questionAnswerAgent, similarTopicsExtractorAgent)
+                .output(agenticScope -> {
+                    QuestionsOutput questions = (QuestionsOutput) agenticScope.readState("questions");
+                    SimilarTopicList similarTopics = (SimilarTopicList) agenticScope.readState("similarTopics");
+                    return Map.of(
+                            "questions", questions,
+                            "similarTopics", similarTopics
+                    );
+                })
                 .listener(customAgentListener)
                 .build();
 
         Map<String, Object> input = Map.of(
                 "topic", query,
                 "difficultyLevel", DifficultyLevel.MEDIUM.name(),
-                "totalQuestions", 3
+                "totalQuestions", 3,
+                "totalTopics", 5
         );
-        Object response = novelCreator.invoke(input);
 
-        return ResponseEntity.ok(response.toString());
+        Map<String, Object> response = (Map<String, Object>) parallelAgent.invoke(input);
+
+        return ResponseEntity.ok(response);
     }
 }

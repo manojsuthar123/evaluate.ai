@@ -12,6 +12,6 @@ public class OllamaConfig {
     public ChatModel ollamaChatModel() {
         return OllamaChatModel.builder()
                 .baseUrl("http://localhost:11434")
-                .modelName("gemma3").build();
+                .modelName("llama3.2").build();
     }
 }

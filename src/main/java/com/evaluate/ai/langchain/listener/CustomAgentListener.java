@@ -12,8 +12,8 @@ public class CustomAgentListener implements AgentListener {
     @Override
     public void afterAgentInvocation(AgentResponse agentResponse) {
         log.info("Agent invoked: {}", agentResponse.agentName());
-        log.info("Agent output: {}", agentResponse.output());
         log.info("Agent arguments: {}", agentResponse.agent().arguments().toArray());
+        log.info("Agent output: {}", agentResponse.output());
         if (agentResponse.chatResponse() != null && agentResponse.chatResponse().tokenUsage() != null) {
             log.info("Agent total token used:{}", agentResponse.chatResponse().tokenUsage().totalTokenCount());
         }
