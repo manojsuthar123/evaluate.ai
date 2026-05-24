@@ -12,6 +12,7 @@ public class GeminiConfig {
     public ChatModel chatModel() {
         return GoogleAiGeminiChatModel.builder()
                 .apiKey(System.getenv("GOOGLE_GENAI_API_KEY"))
+                .allowGoogleSearch(true)
                 .logRequestsAndResponses(true)
                 .maxOutputTokens(8192)
                 .modelName("gemini-2.5-flash").build();

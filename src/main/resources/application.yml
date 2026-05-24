@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: evaluate.ai
+  ai:
+    google:
+      genai:
+        api-key: ${GOOGLE_GENAI_API_KEY}
+        chat:
+          options:
+            model: gemini-2.0-flash
+        embedding:
+          api-key: ${GOOGLE_GENAI_API_KEY}
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/appdb"
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: START_ONLY
+      file: docker-compose.yml
+
