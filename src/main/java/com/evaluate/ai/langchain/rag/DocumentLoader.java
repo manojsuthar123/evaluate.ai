@@ -24,8 +24,8 @@ public class DocumentLoader {
     public static List<Document> getMultipleDocumentsWithGlob(String directory) {
         try {
             Path directoryPath = toPath(directory);
-            PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:*.txt");
-            log.info("Loading *.txt documents from: {}", directoryPath);
+            PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:*.pdf");
+            log.info("Loading *.pdf documents from: {}", directoryPath);
             List<Document> documents = loadDocuments(directoryPath, pathMatcher, new ApacheTikaDocumentParser());
             log.info("Successfully loaded {} document(s)", documents.size());
             documents.forEach(DocumentLoader::log);
