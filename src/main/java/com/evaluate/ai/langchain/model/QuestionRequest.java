@@ -7,5 +7,5 @@ public class QuestionRequest {
     String topic;
     DifficultyLevel difficultyLevel;
     int totalQuestions;
-    int totalTopics;
+    int totalSimilarTopics;
 }

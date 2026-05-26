@@ -2,17 +2,21 @@ package com.evaluate.ai.langchain.service;
 
 import com.evaluate.ai.langchain.agents.QuestionBuilderAgent;
 import com.evaluate.ai.langchain.agents.SimilarTopicsExtractorAgent;
-import com.evaluate.ai.langchain.agents.TestDataProviderAgent;
-import com.evaluate.ai.langchain.agents.WebSearchAgent;
+import com.evaluate.ai.langchain.agents.TopicDetailsAggregatorAgent;
 import com.evaluate.ai.langchain.listener.CustomAgentListener;
 import com.evaluate.ai.langchain.model.QuestionRequest;
 import com.evaluate.ai.langchain.model.QuestionsOutput;
 import com.evaluate.ai.langchain.model.SimilarTopicList;
+import com.evaluate.ai.langchain.rag.RagService;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.rag.DefaultRetrievalAugmentor;
+import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.WebSearchContentRetriever;
+import dev.langchain4j.rag.query.router.DefaultQueryRouter;
+import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,11 +30,13 @@ public class QuestionService {
     private final ChatModel geminiChatModel;
     private final ChatModel ollamaChatModel;
     private final CustomAgentListener customAgentListener;
+    private final RagService ragService;
 
-    public QuestionService(@Qualifier("geminiChatModel") ChatModel geminiChatModel, ChatModel ollamaChatModel, CustomAgentListener customAgentListener) {
+    public QuestionService(@Qualifier("geminiChatModel") ChatModel geminiChatModel, ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService) {
         this.geminiChatModel = geminiChatModel;
         this.ollamaChatModel = ollamaChatModel;
         this.customAgentListener = customAgentListener;
+        this.ragService = ragService;
     }
 
     public Map<String, Object> generateQuestions(QuestionRequest questionRequest) {
@@ -44,23 +50,24 @@ public class QuestionService {
                 .maxResults(3)
                 .build();
 
-        /*WebSearchAgent webSearchAgent = AiServices.builder(WebSearchAgent.class)
-                .chatModel(chatModel)
-                .contentRetriever(webSearchContentRetriever)
+        QueryRouter queryRouter = new DefaultQueryRouter(webSearchContentRetriever, ragService.embeddingStoreContentRetriever());
+
+        RetrievalAugmentor retrievalAugmentor = DefaultRetrievalAugmentor.builder()
+                .queryRouter(queryRouter)
+                .build();
+
+        TopicDetailsAggregatorAgent topicDetailsAggregatorAgent = AgenticServices.agentBuilder(TopicDetailsAggregatorAgent.class)
+                .chatModel(ollamaChatModel)
+                .retrievalAugmentor(retrievalAugmentor)
+                .outputKey("topicDetails")
+                .listener(customAgentListener)
+                .build();
+
+        /*TestDataProviderAgent testDataProviderAgent = AgenticServices.agentBuilder(TestDataProviderAgent.class)
+                .chatModel(ollamaChatModel)
+                .outputKey("topicDetails")
+                .listener(customAgentListener)
                 .build();*/
-
-        WebSearchAgent webSearchAgent = AgenticServices.agentBuilder(WebSearchAgent.class)
-                .chatModel(ollamaChatModel)
-                .contentRetriever(webSearchContentRetriever)
-                .outputKey("topicDetails")
-                .listener(customAgentListener)
-                .build();
-
-        TestDataProviderAgent testDataProviderAgent = AgenticServices.agentBuilder(TestDataProviderAgent.class)
-                .chatModel(ollamaChatModel)
-                .outputKey("topicDetails")
-                .listener(customAgentListener)
-                .build();
 
         QuestionBuilderAgent questionBuilderAgent = AgenticServices.agentBuilder(QuestionBuilderAgent.class)
                 .chatModel(ollamaChatModel)
@@ -69,7 +76,7 @@ public class QuestionService {
                 .build();
 
         UntypedAgent questionAnswerAgent = AgenticServices.sequenceBuilder()
-                .subAgents(testDataProviderAgent, questionBuilderAgent)
+                .subAgents(topicDetailsAggregatorAgent, questionBuilderAgent)
                 .outputKey("questions")
                 .listener(customAgentListener)
                 .build();
@@ -97,7 +104,7 @@ public class QuestionService {
                 "topic", questionRequest.getTopic(),
                 "difficultyLevel", questionRequest.getDifficultyLevel().name(),
                 "totalQuestions", questionRequest.getTotalQuestions(),
-                "totalTopics", questionRequest.getTotalTopics()
+                "totalTopics", questionRequest.getTotalSimilarTopics()
         );
 
         Map<String, Object> response = (Map<String, Object>) parallelAgent.invoke(input);
