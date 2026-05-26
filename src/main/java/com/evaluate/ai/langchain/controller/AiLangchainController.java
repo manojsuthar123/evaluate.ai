@@ -28,10 +28,11 @@ public class AiLangchainController {
     }
 
     @GetMapping("/embed-documents")
-    public String embedDocuments() {
+    public ResponseEntity<?> embedDocuments() {
         // Load all *.txt documents from resources/static/docs directory
         List<Document> documents = DocumentLoader.getMultipleDocumentsWithGlob("/static/docs");
-        return ragService.embedDocsInPgVector(documents);
+        ragService.embedDocsInPgVector(documents);
+        return ResponseEntity.ok("Success");
     }
 
     @GetMapping("/search-documents")
