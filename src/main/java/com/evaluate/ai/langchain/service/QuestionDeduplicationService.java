@@ -29,21 +29,18 @@ public class QuestionDeduplicationService {
         // Step 2 — exact hash match
         String hash = QuestionUtils.sha256(normalized);
 
-        boolean exactExists =
-                questionRepository.findByQuestionHash(hash).isPresent();
+        boolean exactExists = questionRepository.findByQuestionHash(hash).isPresent();
 
         if (exactExists) {
             return true;
         }
 
         // Step 3 — semantic similarity
-        Embedding embedding =
-                embeddingModel.embed(questionText).content();
+        Embedding embedding = embeddingModel.embed(questionText).content();
 
         String vectorString = toPgVector(embedding.vector());
 
-        List<Object[]> results =
-                embeddingRepository.findSimilarQuestions(vectorString);
+        List<Object[]> results = embeddingRepository.findSimilarQuestions(vectorString);
 
         for (Object[] row : results) {
 
@@ -57,26 +54,20 @@ public class QuestionDeduplicationService {
         return false;
     }
 
-    public GeneratedQuestion saveQuestion(
-            GeneratedQuestion question
-    ) {
+    public GeneratedQuestion saveQuestion(GeneratedQuestion question) {
 
-        String normalized =
-                QuestionUtils.normalize(question.getQuestionText());
+        String normalized = QuestionUtils.normalize(question.getQuestionText());
 
         question.setNormalizedQuestion(normalized);
 
-        String hash =
-                QuestionUtils.sha256(normalized);
+        String hash = QuestionUtils.sha256(normalized);
 
         question.setQuestionHash(hash);
 
-        GeneratedQuestion saved =
-                questionRepository.save(question);
+        GeneratedQuestion saved = questionRepository.save(question);
 
-        Embedding embedding =
-                embeddingModel.embed(question.getQuestionText())
-                        .content();
+        Embedding embedding = embeddingModel.embed(question.getQuestionText())
+                .content();
 
         QuestionEmbedding qe = QuestionEmbedding.builder()
                 .question(saved)

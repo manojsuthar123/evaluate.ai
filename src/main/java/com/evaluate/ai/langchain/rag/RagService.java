@@ -6,7 +6,6 @@ import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
@@ -31,8 +30,8 @@ public class RagService {
     private final int MAX_RESULTS = 3;
     private final double MIN_SCORE = 0.5;
 
-    public RagService(DataSource dataSource) {
-        this.embeddingModel = new AllMiniLmL6V2EmbeddingModel();
+    public RagService(DataSource dataSource, EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
         this.embeddingStore = PgVectorEmbeddingStore.datasourceBuilder()
                 .datasource(dataSource)
                 .table("document_embeddings")
