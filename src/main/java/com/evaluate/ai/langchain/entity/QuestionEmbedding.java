@@ -23,8 +23,8 @@ public class QuestionEmbedding {
     @JoinColumn(name = "question_id")
     private GeneratedQuestion question;
 
-    // PostgreSQL pgvector column declared as vector(768) in the schema.
-    @Column(name = "embedding", columnDefinition = "vector(768)")
+    // PostgreSQL pgvector column declared as vector(384) in the schema.
+    @Column(name = "embedding", columnDefinition = "vector(384)")
     private float[] embedding;
 }
 

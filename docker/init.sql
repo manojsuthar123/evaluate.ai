@@ -1,8 +1,10 @@
 ---CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 
 CREATE TABLE users
 (
-    id         UUID PRIMARY KEY,
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name       VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -47,5 +49,5 @@ CREATE TABLE user_question_history
 CREATE TABLE question_embeddings (
                                      question_id UUID PRIMARY KEY REFERENCES generated_questions(id),
 
-                                     embedding vector(768)
+                                     embedding vector(384)
 );
