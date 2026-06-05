@@ -4,27 +4,25 @@ import com.evaluate.ai.langchain.agents.QuestionBuilderAgent;
 import com.evaluate.ai.langchain.agents.SaveQuestionsAgent;
 import com.evaluate.ai.langchain.agents.SimilarTopicsExtractorAgent;
 import com.evaluate.ai.langchain.agents.TopicDetailsAggregatorAgent;
+import com.evaluate.ai.langchain.entity.GeneratedQuestion;
 import com.evaluate.ai.langchain.listener.CustomAgentListener;
 import com.evaluate.ai.langchain.model.QuestionAnswerResponse;
 import com.evaluate.ai.langchain.model.QuestionRequest;
-import com.evaluate.ai.langchain.model.QuestionsOutput;
 import com.evaluate.ai.langchain.model.SimilarTopicList;
 import com.evaluate.ai.langchain.rag.RagService;
+import com.evaluate.ai.langchain.utils.Constant;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.rag.DefaultRetrievalAugmentor;
 import dev.langchain4j.rag.RetrievalAugmentor;
-import dev.langchain4j.rag.content.retriever.ContentRetriever;
-import dev.langchain4j.rag.content.retriever.WebSearchContentRetriever;
 import dev.langchain4j.rag.query.router.DefaultQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
-import dev.langchain4j.web.search.WebSearchEngine;
-import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -49,15 +47,9 @@ public class QuestionService {
 
     public QuestionAnswerResponse generateQuestions(QuestionRequest questionRequest) {
 
-        /*TestDataProviderAgent testDataProviderAgent = AgenticServices.agentBuilder(TestDataProviderAgent.class)
-                .chatModel(ollamaChatModel)
-                .outputKey("topicDetails")
-                .listener(customAgentListener)
-                .build();*/
-
         UntypedAgent questionAnswerAgent = AgenticServices.sequenceBuilder()
                 .subAgents(this.getTopicDetailsAggregatorAgent(), this.getValidatedQuestionsAgent(questionRequest))
-                .outputKey("questions")
+                .outputKey(Constant.OUTPUT_KEY_QUESTIONS)
                 .listener(customAgentListener)
                 .build();
 
@@ -70,9 +62,9 @@ public class QuestionService {
         UntypedAgent parallelAgent = AgenticServices.sequenceBuilder()
                 .subAgents(questionAnswerAgent, similarTopicsExtractorAgent, saveQuestionsAgent)
                 .output(agenticScope -> {
-                    QuestionsOutput questions = (QuestionsOutput) agenticScope.readState("questions");
+                    List<GeneratedQuestion> savedQuestions = (List<GeneratedQuestion>) agenticScope.readState("savedQuestions");
                     SimilarTopicList similarTopics = (SimilarTopicList) agenticScope.readState("similarTopics");
-                    return new QuestionAnswerResponse(questions, similarTopics);
+                    return new QuestionAnswerResponse(savedQuestions, similarTopics);
                 })
                 .listener(customAgentListener)
                 .build();
@@ -92,16 +84,23 @@ public class QuestionService {
      * This agent retrieves details about the topic using both web search and RAG, then aggregates the information to provide a comprehensive context for question generation.
      */
     private TopicDetailsAggregatorAgent getTopicDetailsAggregatorAgent() {
-        WebSearchEngine webSearchEngine = TavilyWebSearchEngine.builder()
+        /*TestDataProviderAgent testDataProviderAgent = AgenticServices.agentBuilder(TestDataProviderAgent.class)
+                .chatModel(ollamaChatModel)
+                .outputKey("topicDetails")
+                .listener(customAgentListener)
+                .build();*/
+
+        /*WebSearchEngine webSearchEngine = TavilyWebSearchEngine.builder()
                 .apiKey(System.getenv("TAVILY_API_KEY"))
                 .build();
 
         ContentRetriever webSearchContentRetriever = WebSearchContentRetriever.builder()
                 .webSearchEngine(webSearchEngine)
                 .maxResults(3)
-                .build();
+                .build();*/
 
-        QueryRouter queryRouter = new DefaultQueryRouter(webSearchContentRetriever, ragService.embeddingStoreContentRetriever());
+        //QueryRouter queryRouter = new DefaultQueryRouter(webSearchContentRetriever, ragService.embeddingStoreContentRetriever());
+        QueryRouter queryRouter = new DefaultQueryRouter(ragService.embeddingStoreContentRetriever());
 
         RetrievalAugmentor retrievalAugmentor = DefaultRetrievalAugmentor.builder()
                 .queryRouter(queryRouter)
@@ -121,7 +120,7 @@ public class QuestionService {
     private QuestionBuilderAgent getValidatedQuestionsAgent(QuestionRequest questionRequest) {
         QuestionBuilderAgent questionBuilderAgent = AgenticServices.agentBuilder(QuestionBuilderAgent.class)
                 .chatModel(ollamaChatModel)
-                .outputKey("questions")
+                .outputKey(Constant.OUTPUT_KEY_QUESTIONS)
                 .listener(customAgentListener)
                 .build();
         return questionBuilderAgent;

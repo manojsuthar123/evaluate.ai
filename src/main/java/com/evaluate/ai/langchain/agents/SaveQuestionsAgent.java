@@ -12,6 +12,8 @@ import dev.langchain4j.service.V;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -30,11 +32,11 @@ public class SaveQuestionsAgent {
         this.appUserRepository = appUserRepository;
     }
 
-    @Agent(name = "SaveQuestionsAgent", description = "Saves the generated questions to a database or file system.")
-    public void saveQuestions(@V("questions") QuestionsOutput questionsOutput, @V("topic") String topic, @V("userId") UUID userId) {
+    @Agent(outputKey = "savedQuestions", name = "SaveQuestionsAgent", description = "Saves the generated questions to a database or file system.")
+    public List<GeneratedQuestion> saveQuestions(@V("questions") QuestionsOutput questionsOutput, @V("topic") String topic, @V("userId") UUID userId) {
         var user = appUserRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found for id: " + userId));
-
+        List<GeneratedQuestion> generatedQuestions = new ArrayList<>();
         for (QuestionAnswerModel questionAnswerModel : questionsOutput.questions()) {
             if (questionDeduplicationService.isDuplicate(questionAnswerModel.question())) {
                 log.info("Skipping duplicate question for topic '{}': {}", topic, questionAnswerModel.question());
@@ -54,7 +56,7 @@ public class SaveQuestionsAgent {
                     .build();
 
             GeneratedQuestion savedQuestion = questionDeduplicationService.saveQuestion(generatedQuestion);
-
+            generatedQuestions.add(savedQuestion);
             if (userQuestionHistoryRepository.existsByUser_IdAndQuestion_Id(userId, savedQuestion.getId())) {
                 log.info("History already exists for user {} and question {}", userId, savedQuestion.getId());
                 continue;
@@ -68,6 +70,6 @@ public class SaveQuestionsAgent {
             userQuestionHistoryRepository.save(userQuestionHistory);
             log.info("Generated question and history saved in database: {}", savedQuestion.getId());
         }
-
+        return generatedQuestions;
     }
 }
