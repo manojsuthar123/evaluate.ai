@@ -9,7 +9,10 @@ import com.evaluate.ai.langchain.listener.CustomAgentListener;
 import com.evaluate.ai.langchain.model.QuestionAnswerResponse;
 import com.evaluate.ai.langchain.model.QuestionRequest;
 import com.evaluate.ai.langchain.model.SimilarTopicList;
+import com.evaluate.ai.langchain.model.SubmitQuestionRequest;
 import com.evaluate.ai.langchain.rag.RagService;
+import com.evaluate.ai.langchain.repository.GeneratedQuestionRepository;
+import com.evaluate.ai.langchain.repository.UserQuestionHistoryRepository;
 import com.evaluate.ai.langchain.utils.Constant;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.UntypedAgent;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -35,14 +39,18 @@ public class QuestionService {
     private final RagService ragService;
     private final QuestionDeduplicationService questionDeduplicationService;
     private final SaveQuestionsAgent saveQuestionsAgent;
+    private final UserQuestionHistoryRepository userQuestionHistoryRepository;
+    private final GeneratedQuestionRepository generatedQuestionRepository;
 
-    public QuestionService(@Qualifier("geminiChatModel") ChatModel geminiChatModel, ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService, QuestionDeduplicationService questionDeduplicationService, SaveQuestionsAgent saveQuestionsAgent) {
+    public QuestionService(@Qualifier("geminiChatModel") ChatModel geminiChatModel, ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService, QuestionDeduplicationService questionDeduplicationService, SaveQuestionsAgent saveQuestionsAgent, UserQuestionHistoryRepository userQuestionHistoryRepository, GeneratedQuestionRepository generatedQuestionRepository) {
         this.geminiChatModel = geminiChatModel;
         this.ollamaChatModel = ollamaChatModel;
         this.customAgentListener = customAgentListener;
         this.ragService = ragService;
         this.questionDeduplicationService = questionDeduplicationService;
         this.saveQuestionsAgent = saveQuestionsAgent;
+        this.userQuestionHistoryRepository = userQuestionHistoryRepository;
+        this.generatedQuestionRepository = generatedQuestionRepository;
     }
 
     public QuestionAnswerResponse generateQuestions(QuestionRequest questionRequest) {
@@ -153,5 +161,20 @@ public class QuestionService {
                 })
                 .listener(customAgentListener)
                 .build();*/
+    }
+
+    public String submitQuestion(List<SubmitQuestionRequest> submitQuestionRequests, UUID userId) {
+        for (SubmitQuestionRequest submitQuestionRequest : submitQuestionRequests) {
+            generatedQuestionRepository.findById(submitQuestionRequest.questionId())
+                    .ifPresent(generatedQuestion -> {
+                        userQuestionHistoryRepository.findByUser_IdAndQuestion_Id(userId, submitQuestionRequest.questionId())
+                                .ifPresent(existingHistory -> {
+                                    existingHistory.setUserAnswer(submitQuestionRequest.userAnswer());
+                                    existingHistory.setCorrect(submitQuestionRequest.userAnswer().equalsIgnoreCase(generatedQuestion.getCorrectAnswer()));
+                                    userQuestionHistoryRepository.save(existingHistory);
+                                });
+                    });
+        }
+        return "Result saved successfully";
     }
 }

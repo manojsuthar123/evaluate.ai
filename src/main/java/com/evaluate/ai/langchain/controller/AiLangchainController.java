@@ -1,6 +1,7 @@
 package com.evaluate.ai.langchain.controller;
 
 import com.evaluate.ai.langchain.model.QuestionRequest;
+import com.evaluate.ai.langchain.model.SubmitQuestionRequest;
 import com.evaluate.ai.langchain.rag.DocumentLoader;
 import com.evaluate.ai.langchain.rag.RagService;
 import com.evaluate.ai.langchain.service.QuestionService;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequestMapping("/api/langchain")
 @RestController
@@ -22,9 +24,14 @@ public class AiLangchainController {
         this.ragService = ragService;
     }
 
-    @GetMapping("/chat")
-    public ResponseEntity<?> chatWithAi(@RequestBody QuestionRequest questionRequest) {
+    @PostMapping("/question/generate")
+    public ResponseEntity<?> generateQuestionWithAi(@RequestBody QuestionRequest questionRequest) {
         return ResponseEntity.ok(questionService.generateQuestions(questionRequest));
+    }
+
+    @PostMapping("/question/submit")
+    public ResponseEntity<?> submitQuestion(@RequestBody List<SubmitQuestionRequest> submitQuestionRequests, @RequestParam UUID userId) {
+        return ResponseEntity.ok(questionService.submitQuestion(submitQuestionRequests, userId));
     }
 
     @GetMapping("/embed-documents")
