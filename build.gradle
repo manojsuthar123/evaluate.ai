@@ -25,10 +25,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-
     //implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
     //implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     //implementation 'org.springframework.ai:spring-ai-starter-model-google-genai-embedding'
+
+    implementation 'com.julien-dubois.bootui:bootui-spring-boot-starter:1.1.0'
 
     implementation 'dev.langchain4j:langchain4j-agentic:1.15.0-beta25'
     implementation 'dev.langchain4j:langchain4j-google-ai-gemini:1.14.1'
@@ -38,6 +39,7 @@ dependencies {
     implementation 'dev.langchain4j:langchain4j-document-parser-apache-tika:1.14.1-beta24'
     implementation 'dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:1.14.1-beta24'
     implementation 'dev.langchain4j:langchain4j-pgvector:1.14.1-beta24'
+    //implementation 'dev.langchain4j:langchain4j-experimental-sql:1.15.0-beta25'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'
@@ -48,6 +50,7 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
 dependencyManagement {

@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: local
   application:
     name: evaluate.ai
   ai:
@@ -28,3 +30,5 @@ spring:
       lifecycle-management: START_ONLY
       file: docker-compose.yml
 
+bootui:
+  enabled: ON

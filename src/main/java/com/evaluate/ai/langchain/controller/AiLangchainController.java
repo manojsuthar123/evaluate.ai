@@ -34,6 +34,11 @@ public class AiLangchainController {
         return ResponseEntity.ok(questionService.submitQuestion(submitQuestionRequests, userId));
     }
 
+    @GetMapping("/insights")
+    public ResponseEntity<?> getInsights(@RequestParam String query) {
+        return ResponseEntity.ok(questionService.getInsights(query));
+    }
+
     @GetMapping("/embed-documents")
     public ResponseEntity<?> embedDocuments() {
         // Load all *.txt documents from resources/static/docs directory

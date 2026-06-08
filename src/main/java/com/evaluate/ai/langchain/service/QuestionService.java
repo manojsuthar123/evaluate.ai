@@ -18,10 +18,11 @@ import dev.langchain4j.rag.DefaultRetrievalAugmentor;
 import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.query.router.DefaultQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
+import dev.langchain4j.service.AiServices;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,24 +32,22 @@ import java.util.UUID;
 @Service
 public class QuestionService {
 
-    private final ChatModel geminiChatModel;
     private final ChatModel ollamaChatModel;
     private final CustomAgentListener customAgentListener;
     private final RagService ragService;
-    private final QuestionDeduplicationService questionDeduplicationService;
     private final SaveQuestionsAgent saveQuestionsAgent;
     private final UserQuestionHistoryRepository userQuestionHistoryRepository;
     private final GeneratedQuestionRepository generatedQuestionRepository;
+    private final DataSource dataSource;
 
-    public QuestionService(@Qualifier("geminiChatModel") ChatModel geminiChatModel, ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService, QuestionDeduplicationService questionDeduplicationService, SaveQuestionsAgent saveQuestionsAgent, UserQuestionHistoryRepository userQuestionHistoryRepository, GeneratedQuestionRepository generatedQuestionRepository) {
-        this.geminiChatModel = geminiChatModel;
+    public QuestionService(ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService, SaveQuestionsAgent saveQuestionsAgent, UserQuestionHistoryRepository userQuestionHistoryRepository, GeneratedQuestionRepository generatedQuestionRepository, DataSource dataSource) {
         this.ollamaChatModel = ollamaChatModel;
         this.customAgentListener = customAgentListener;
         this.ragService = ragService;
-        this.questionDeduplicationService = questionDeduplicationService;
         this.saveQuestionsAgent = saveQuestionsAgent;
         this.userQuestionHistoryRepository = userQuestionHistoryRepository;
         this.generatedQuestionRepository = generatedQuestionRepository;
+        this.dataSource = dataSource;
     }
 
     public QuestionAnswerResponse generateQuestions(QuestionRequest questionRequest) {
@@ -180,5 +179,17 @@ public class QuestionService {
                     });
         }
         return submitQuestionResponses;
+    }
+
+    public String getInsights(String query) {
+        /*ContentRetriever databaseContentRetriever = SqlDatabaseContentRetriever.builder()
+                .dataSource(dataSource)
+                .chatModel(ollamaChatModel)
+                .build();
+*/
+        Assistant assistantChat = AiServices.builder(Assistant.class)
+                .chatModel(ollamaChatModel)
+                .build();
+        return assistantChat.chat(query);
     }
 }
