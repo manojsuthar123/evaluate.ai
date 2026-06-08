@@ -6,10 +6,7 @@ import com.evaluate.ai.langchain.agents.SimilarTopicsExtractorAgent;
 import com.evaluate.ai.langchain.agents.TopicDetailsAggregatorAgent;
 import com.evaluate.ai.langchain.entity.GeneratedQuestion;
 import com.evaluate.ai.langchain.listener.CustomAgentListener;
-import com.evaluate.ai.langchain.model.QuestionAnswerResponse;
-import com.evaluate.ai.langchain.model.QuestionRequest;
-import com.evaluate.ai.langchain.model.SimilarTopicList;
-import com.evaluate.ai.langchain.model.SubmitQuestionRequest;
+import com.evaluate.ai.langchain.model.*;
 import com.evaluate.ai.langchain.rag.RagService;
 import com.evaluate.ai.langchain.repository.GeneratedQuestionRepository;
 import com.evaluate.ai.langchain.repository.UserQuestionHistoryRepository;
@@ -25,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -163,18 +161,24 @@ public class QuestionService {
                 .build();*/
     }
 
-    public String submitQuestion(List<SubmitQuestionRequest> submitQuestionRequests, UUID userId) {
+    public List<SubmitQuestionResponse> submitQuestion(List<SubmitQuestionRequest> submitQuestionRequests, UUID userId) {
+        List<SubmitQuestionResponse> submitQuestionResponses = new ArrayList<>();
         for (SubmitQuestionRequest submitQuestionRequest : submitQuestionRequests) {
             generatedQuestionRepository.findById(submitQuestionRequest.questionId())
                     .ifPresent(generatedQuestion -> {
                         userQuestionHistoryRepository.findByUser_IdAndQuestion_Id(userId, submitQuestionRequest.questionId())
                                 .ifPresent(existingHistory -> {
+                                    boolean isAnswerCorrect = submitQuestionRequest.userAnswer().equalsIgnoreCase(generatedQuestion.getCorrectAnswer());
                                     existingHistory.setUserAnswer(submitQuestionRequest.userAnswer());
-                                    existingHistory.setCorrect(submitQuestionRequest.userAnswer().equalsIgnoreCase(generatedQuestion.getCorrectAnswer()));
+                                    existingHistory.setCorrect(isAnswerCorrect);
                                     userQuestionHistoryRepository.save(existingHistory);
+                                    submitQuestionResponses.add(new SubmitQuestionResponse(submitQuestionRequest.questionId(),
+                                            submitQuestionRequest.userAnswer(),
+                                            generatedQuestion.getCorrectAnswer(),
+                                            isAnswerCorrect));
                                 });
                     });
         }
-        return "Result saved successfully";
+        return submitQuestionResponses;
     }
 }
