@@ -7,8 +7,8 @@ import java.util.UUID;
 @Data
 public class QuestionRequest {
     String topic;
-    DifficultyLevel difficultyLevel;
-    int totalQuestions;
-    int totalSimilarTopics;
+    DifficultyLevel difficultyLevel = DifficultyLevel.MEDIUM;
+    int totalQuestions = 5;
+    int totalSimilarTopics = 5;
     UUID userId;
 }

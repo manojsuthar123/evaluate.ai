@@ -11,5 +11,8 @@ public interface UserQuestionHistoryRepository extends JpaRepository<UserQuestio
     boolean existsByUser_IdAndQuestion_Id(UUID userId, UUID questionId);
 
     Optional<UserQuestionHistory> findByUser_IdAndQuestion_Id(UUID userId, UUID questionId);
+
+    // Find all history entries for a user (ordered by askedAt asc)
+    java.util.List<UserQuestionHistory> findAllByUser_IdOrderByAskedAtAsc(UUID userId);
 }
 
