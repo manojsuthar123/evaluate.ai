@@ -1,5 +1,6 @@
 package com.evaluate.ai.langchain.controller;
 
+import com.evaluate.ai.langchain.model.CustomMetadata;
 import com.evaluate.ai.langchain.model.QuestionRequest;
 import com.evaluate.ai.langchain.model.SubmitQuestionRequest;
 import com.evaluate.ai.langchain.rag.DocumentLoader;
@@ -41,12 +42,12 @@ public class AiLangchainController {
         return ResponseEntity.ok(questionService.getInsights(query));
     }
 
-    @GetMapping("/embed-documents")
-    public ResponseEntity<?> embedDocuments(@RequestParam("file") MultipartFile file) throws IOException {
+    @PostMapping("/embed-documents")
+    public ResponseEntity<?> embedDocuments(@RequestParam("file") MultipartFile file, CustomMetadata customMetadata) throws IOException {
         // Load all *.txt documents from resources/static/docs directory
         //List<Document> documents = DocumentLoader.getMultipleDocumentsWithGlob("/static/docs");
         DocumentLoader loader = new DocumentLoader();
-        ragService.embedDocsInPgVector(List.of(loader.toDocument(file)));
+        ragService.embedDocsInPgVector(loader.toDocument(file), customMetadata);
         return ResponseEntity.ok("Success");
     }
 

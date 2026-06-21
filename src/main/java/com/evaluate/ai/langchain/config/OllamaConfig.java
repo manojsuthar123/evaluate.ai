@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-@Profile(value = {"local"})
+@Profile(value = {"prod"})
 @Configuration
 public class OllamaConfig {
 
@@ -16,6 +16,6 @@ public class OllamaConfig {
         return OllamaChatModel.builder()
                 .baseUrl("http://localhost:11434")
                 .responseFormat(ResponseFormat.JSON)
-                .modelName("llama3.2").build();
+                .modelName("llama3.1").build();
     }
 }

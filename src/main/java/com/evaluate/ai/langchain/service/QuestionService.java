@@ -16,6 +16,8 @@ import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.rag.DefaultRetrievalAugmentor;
 import dev.langchain4j.rag.RetrievalAugmentor;
+import dev.langchain4j.rag.content.injector.ContentInjector;
+import dev.langchain4j.rag.content.injector.DefaultContentInjector;
 import dev.langchain4j.rag.query.router.DefaultQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.service.AiServices;
@@ -107,8 +109,15 @@ public class QuestionService {
         //QueryRouter queryRouter = new DefaultQueryRouter(webSearchContentRetriever, ragService.embeddingStoreContentRetriever());
         QueryRouter queryRouter = new DefaultQueryRouter(ragService.embeddingStoreContentRetriever());
 
+        // Each retrieved segment should include "file_name" and "index" metadata values in the prompt
+        ContentInjector contentInjector = DefaultContentInjector.builder()
+                // .promptTemplate(...) // Formatting can also be changed
+                .metadataKeysToInclude(List.of("file_name", "index"))
+                .build();
+
         RetrievalAugmentor retrievalAugmentor = DefaultRetrievalAugmentor.builder()
                 .queryRouter(queryRouter)
+                .contentInjector(contentInjector)
                 .build();
 
         return AgenticServices.agentBuilder(TopicDetailsAggregatorAgent.class)

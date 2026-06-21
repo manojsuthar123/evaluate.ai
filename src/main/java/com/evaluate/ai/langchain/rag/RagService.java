@@ -1,7 +1,9 @@
 package com.evaluate.ai.langchain.rag;
 
+import com.evaluate.ai.langchain.model.CustomMetadata;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -12,6 +14,7 @@ import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
+import dev.langchain4j.store.embedding.filter.Filter;
 import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,8 @@ import org.springframework.stereotype.Service;
 import javax.sql.DataSource;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
 
 @Slf4j
 @Service
@@ -44,18 +49,22 @@ public class RagService {
     }
 
 
-    public void embedDocsInPgVector(List<Document> documents) {
+    public void embedDocsInPgVector(Document document, CustomMetadata customMetadata) {
         log.info("Embedding documents in PgVector...");
-        DocumentSplitter splitter = DocumentSplitters.recursive(300, 50);
+        Metadata metadata = new Metadata();
+        metadata.put("category", customMetadata.category());
+        metadata.put("documentName", customMetadata.documentName());
+        metadata.put("language", customMetadata.language());
+        metadata.put("tags", customMetadata.tags());
+
+        DocumentSplitter splitter = DocumentSplitters.recursive(512, 60);
         EmbeddingStoreIngestor embeddingStoreIngestor = EmbeddingStoreIngestor.builder()
                 .documentSplitter(splitter)
                 .embeddingModel(embeddingModel)
                 .embeddingStore(embeddingStore)
                 .build();
 
-        for (Document document : documents) {
-            embeddingStoreIngestor.ingest(document);
-        }
+        embeddingStoreIngestor.ingest(Document.document(document.text(), metadata));
         log.info("Embedding documents in PgVector complete!");
     }
 
@@ -79,6 +88,8 @@ public class RagService {
     }
 
     public ContentRetriever embeddingStoreContentRetriever() {
+        Filter onlyTopic = metadataKey("tags").containsString("Java");
+
         return EmbeddingStoreContentRetriever.builder()
                 .embeddingStore(embeddingStore)
                 .embeddingModel(embeddingModel)

@@ -30,7 +30,7 @@ public class UserQuestionHistory {
     @JoinColumn(name = "question_id", nullable = false)
     private GeneratedQuestion question;
 
-    @Column(name = "user_answer", length = 5)
+    @Column(name = "user_answer")
     private String userAnswer;
 
     @Column(name = "is_correct")
