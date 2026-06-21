@@ -1,9 +1,12 @@
 package com.evaluate.ai.langchain.rag;
 
 import dev.langchain4j.data.document.Document;
+import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystems;
@@ -55,5 +58,11 @@ public class DocumentLoader {
         } catch (URISyntaxException e) {
             throw new RuntimeException("Invalid URI for resource: " + fileName, e);
         }
+    }
+
+    public Document toDocument(MultipartFile file) throws IOException {
+        String contentType = file.getContentType();
+        DocumentParser parser = new ApacheTikaDocumentParser();
+        return parser.parse(file.getInputStream());
     }
 }
