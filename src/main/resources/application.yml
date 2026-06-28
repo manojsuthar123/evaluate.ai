@@ -22,7 +22,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
   datasource:
     url: "jdbc:postgresql://localhost:5433/appdb"
     username: postgres
@@ -36,3 +36,7 @@ spring:
 
 bootui:
   enabled: ON
+
+app:
+  jwt-secret: dsfjasdfjaisdjfa48u5kwj4e5r4i3jrksdjfakjfa498ujra45jadjfaskdjfdkjfa349jjkjasdf9cq345c45345c341c534c415454gytg
+  jwt-expiration-milliseconds: 604800000

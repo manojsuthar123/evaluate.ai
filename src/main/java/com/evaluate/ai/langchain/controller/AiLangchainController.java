@@ -33,8 +33,8 @@ public class AiLangchainController {
     }
 
     @PostMapping("/question/submit")
-    public ResponseEntity<?> submitQuestion(@RequestBody List<SubmitQuestionRequest> submitQuestionRequests, @RequestParam UUID userId) {
-        return ResponseEntity.ok(questionService.submitQuestion(submitQuestionRequests, userId));
+    public ResponseEntity<?> submitQuestion(@RequestBody List<SubmitQuestionRequest> submitQuestionRequests) {
+        return ResponseEntity.ok(questionService.submitQuestion(submitQuestionRequests));
     }
 
     @GetMapping("/insights")

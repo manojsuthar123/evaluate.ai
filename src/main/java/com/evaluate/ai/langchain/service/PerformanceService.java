@@ -10,6 +10,8 @@ import com.evaluate.ai.langchain.repository.UserQuestionHistoryRepository;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,9 +35,12 @@ public class PerformanceService {
         this.chatModel = chatModel;
     }
 
-    public PerformanceResponse.PerformanceResult getPerformance(UUID userId) {
-        // validate user
-        appUserRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    public PerformanceResponse.PerformanceResult getPerformance() {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = userDetails.getUsername();
+        UUID userId = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
+                .getId();
 
         List<UserQuestionHistory> histories = userQuestionHistoryRepository.findAllByUser_IdOrderByAskedAtAsc(userId);
 
@@ -276,4 +281,3 @@ public class PerformanceService {
     }
 
 }
-

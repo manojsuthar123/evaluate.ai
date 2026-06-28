@@ -4,10 +4,12 @@ import com.evaluate.ai.langchain.agents.QuestionBuilderAgent;
 import com.evaluate.ai.langchain.agents.SaveQuestionsAgent;
 import com.evaluate.ai.langchain.agents.SimilarTopicsExtractorAgent;
 import com.evaluate.ai.langchain.agents.TopicDetailsAggregatorAgent;
+import com.evaluate.ai.langchain.entity.AppUser;
 import com.evaluate.ai.langchain.entity.GeneratedQuestion;
 import com.evaluate.ai.langchain.listener.CustomAgentListener;
 import com.evaluate.ai.langchain.model.*;
 import com.evaluate.ai.langchain.rag.RagService;
+import com.evaluate.ai.langchain.repository.AppUserRepository;
 import com.evaluate.ai.langchain.repository.GeneratedQuestionRepository;
 import com.evaluate.ai.langchain.repository.UserQuestionHistoryRepository;
 import com.evaluate.ai.langchain.utils.Constant;
@@ -22,6 +24,8 @@ import dev.langchain4j.rag.query.router.DefaultQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.service.AiServices;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -40,19 +44,27 @@ public class QuestionService {
     private final SaveQuestionsAgent saveQuestionsAgent;
     private final UserQuestionHistoryRepository userQuestionHistoryRepository;
     private final GeneratedQuestionRepository generatedQuestionRepository;
+    private final AppUserRepository appUserRepository;
     private final DataSource dataSource;
 
-    public QuestionService(ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService, SaveQuestionsAgent saveQuestionsAgent, UserQuestionHistoryRepository userQuestionHistoryRepository, GeneratedQuestionRepository generatedQuestionRepository, DataSource dataSource) {
+    public QuestionService(ChatModel ollamaChatModel, CustomAgentListener customAgentListener, RagService ragService, SaveQuestionsAgent saveQuestionsAgent, UserQuestionHistoryRepository userQuestionHistoryRepository, GeneratedQuestionRepository generatedQuestionRepository, AppUserRepository appUserRepository, DataSource dataSource) {
         this.ollamaChatModel = ollamaChatModel;
         this.customAgentListener = customAgentListener;
         this.ragService = ragService;
         this.saveQuestionsAgent = saveQuestionsAgent;
         this.userQuestionHistoryRepository = userQuestionHistoryRepository;
         this.generatedQuestionRepository = generatedQuestionRepository;
+        this.appUserRepository = appUserRepository;
         this.dataSource = dataSource;
     }
 
     public QuestionAnswerResponse generateQuestions(QuestionRequest questionRequest) {
+
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = userDetails.getUsername();
+        AppUser user = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        UUID userId = user.getId();
 
         UntypedAgent questionAnswerAgent = AgenticServices.sequenceBuilder()
                 .subAgents(this.getTopicDetailsAggregatorAgent(), this.getValidatedQuestionsAgent(questionRequest))
@@ -77,7 +89,7 @@ public class QuestionService {
                 .build();
 
         Map<String, Object> input = Map.of(
-                "userId", questionRequest.getUserId(),
+                "userId", userId,
                 "topic", questionRequest.getTopic(),
                 "difficultyLevel", questionRequest.getDifficultyLevel().name(),
                 "totalQuestions", questionRequest.getTotalQuestions(),
@@ -169,7 +181,13 @@ public class QuestionService {
                 .build();*/
     }
 
-    public List<SubmitQuestionResponse> submitQuestion(List<SubmitQuestionRequest> submitQuestionRequests, UUID userId) {
+    public List<SubmitQuestionResponse> submitQuestion(List<SubmitQuestionRequest> submitQuestionRequests) {
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = userDetails.getUsername();
+        AppUser user = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        UUID userId = user.getId();
+
         List<SubmitQuestionResponse> submitQuestionResponses = new ArrayList<>();
         for (SubmitQuestionRequest submitQuestionRequest : submitQuestionRequests) {
             generatedQuestionRepository.findById(submitQuestionRequest.questionId())
