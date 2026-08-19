@@ -33,6 +33,9 @@ Built on Java 21, Spring Boot 4, and the LangChain4j Agentic framework, `evaluat
 
 <img width="1191" height="1081" alt="Evaluate io" src="https://github.com/user-attachments/assets/e5da7599-cdb4-4621-a7ae-5ddf73d2c933" />
 
+## Application Preview
+<img width="1435" height="680" alt="Screenshot 2026-08-20 at 12 40 29 AM" src="https://github.com/user-attachments/assets/ba2b6043-90b3-4d9b-a04f-f7704a4e7b45" />
+
 
 ### Agent Roles:
 1. **TopicDetailsAggregatorAgent**: Retrieves semantic context from the vector database using PgVector content retrieval.
